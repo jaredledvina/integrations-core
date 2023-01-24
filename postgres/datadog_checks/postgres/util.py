@@ -333,7 +333,7 @@ SELECT name, {metrics_columns}
 TX_METRICS = {
     'descriptors': [],
     'metrics': {
-        'pg_snapshot_xmin(pg_current_snapshot())': ('postgresql.transactions.xmin', AgentCheck.gauge),
+        'pg_snapshot_xmin(pg_current_snapshot())': ('postgresql.transactions.xid', AgentCheck.gauge),
     },
     'relation': False,
     'query': 'SELECT {metrics_columns}',
@@ -342,7 +342,7 @@ TX_METRICS = {
 TX_METRICS_LT_13 = {
     'descriptors': [],
     'metrics': {
-        'txid_snapshot_xmin(txid_current_snapshot())': ('postgresql.transactions.xmin', AgentCheck.gauge),
+        'txid_snapshot_xmin(txid_current_snapshot())': ('postgresql.transactions.xid', AgentCheck.gauge),
     },
     'relation': False,
     'query': 'SELECT {metrics_columns}',
