@@ -298,6 +298,18 @@ gitlab_transaction_rails_queue_duration_total{controller="",action=""} 8.8808593
 gitlab_transaction_view_duration_total{controller="HelpController",action="index"} 566.73759999102913
 gitlab_transaction_view_duration_total{controller="MetricsController",action="index"} 0.27490001230034977
 gitlab_transaction_view_duration_total{controller="SessionsController",action="new"} 1130.0544998957776
+# HELP gitlab_view_rendering_duration_seconds Duration for views (histogram)
+# TYPE gitlab_view_rendering_duration_seconds histogram
+gitlab_view_rendering_duration_seconds_bucket{le="+Inf"} 5
+gitlab_view_rendering_duration_seconds_bucket{le="0.005"} 0
+gitlab_view_rendering_duration_seconds_bucket{le="0.01"} 0
+gitlab_view_rendering_duration_seconds_bucket{le="0.02"} 0
+gitlab_view_rendering_duration_seconds_bucket{le="0.04"} 1
+gitlab_view_rendering_duration_seconds_bucket{le="0.07"} 4
+gitlab_view_rendering_duration_seconds_bucket{le="0.1"} 5
+gitlab_view_rendering_duration_seconds_bucket{le="0.5"} 5
+gitlab_view_rendering_duration_seconds_count 5
+gitlab_view_rendering_duration_seconds_sum 0.2822665599999854
 # HELP http_request_duration_seconds Multiprocess metric
 # TYPE http_request_duration_seconds histogram
 http_request_duration_seconds_bucket{method="delete",status="200",le="+Inf"} 0

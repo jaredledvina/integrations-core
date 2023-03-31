@@ -54,6 +54,8 @@ METRICS = [
     "transaction.duration_seconds.sum",
     "transaction.new_redis_connections_total",
     "transaction.view_duration_total",
+    "view_rendering_duration_seconds.count",
+    "view_rendering_duration_seconds.sum",
     "transaction.rails_queue_duration_total",
     "rack.http_requests_total",
     "rack.http_request_duration_seconds.sum",
