@@ -6,9 +6,7 @@ from contextlib import nullcontext as does_not_raise
 
 import mock
 import pytest
-from tests.common import metrics
 
-from datadog_checks.dev.utils import get_metadata_metrics
 from datadog_checks.kafka_consumer import KafkaCheck
 
 pytestmark = [pytest.mark.unit]
@@ -31,23 +29,6 @@ def test_tls_config_legacy(extra_config, expected_http_kwargs, check, kafka_inst
     }
     assert expected_http_kwargs == actual_options
 
-
-def test_invalid_connect_str(dd_run_check, check, aggregator, caplog, kafka_instance):
-    caplog.set_level(logging.DEBUG)
-    kafka_instance['kafka_connect_str'] = 'invalid'
-    del kafka_instance['consumer_groups']
-    dd_run_check(check(kafka_instance))
-
-    for m in metrics:
-        aggregator.assert_metric(m, count=0)
-
-    exception_msg = (
-        'ConfigurationError: Cannot fetch consumer offsets because no consumer_groups are specified and '
-        'monitor_unlisted_consumer_groups is False'
-    )
-
-    assert exception_msg in caplog.text
-    aggregator.assert_metrics_using_metadata(get_metadata_metrics())
 
 
 @pytest.mark.parametrize(
@@ -105,22 +86,35 @@ def test_oauth_config(
             dd_run_check(check(kafka_instance))
 
 
-# TODO: After these tests are finished and the revamp is complete,
-# the tests should be refactored to be parameters instead of separate tests
+
+@pytest.mark.parametrize(
+    'get_consumer_offsets, get_highwater_offsets, get_partitions_for_topics, expected_broker_offset_count, expected_broker_offset_tags, expected_event_count, expected_warning',
+    [
+        pytest.param(
+            {("consumer_group1", "topic1", "partition1"): 2},
+            {("topic1", "partition1"): 1},
+            ['partition1'],
+            1,
+            "",
+        )
+    ]
+)
 @mock.patch("datadog_checks.kafka_consumer.kafka_consumer.KafkaClient")
-def test_when_consumer_lag_less_than_zero_then_emit_event(
-    mock_generic_client, check, kafka_instance, dd_run_check, aggregator
+def test_client(
+    get_consumer_offsets, get_highwater_offsets, get_partitions_for_topics, expected_broker_offset_count, expected_broker_offset_tags, expected_event_count, expected_warning,
+    mock_generic_client, check, kafka_instance, dd_run_check, aggregator, caplog
 ):
     # Given
     # consumer_offset = {(consumer_group, topic, partition): offset}
-    consumer_offset = {("consumer_group1", "topic1", "partition1"): 2}
+    # consumer_offset = {("consumer_group1", "topic1", "partition1"): 2}
     # highwater_offset = {(topic, partition): offset}
-    highwater_offset = {("topic1", "partition1"): 1}
+    # highwater_offset = {("topic1", "partition1"): 1}
     mock_client = mock.MagicMock()
-    mock_client.get_consumer_offsets.return_value = consumer_offset
-    mock_client.get_highwater_offsets.return_value = highwater_offset
-    mock_client.get_partitions_for_topic.return_value = ['partition1']
+    mock_client.get_consumer_offsets.return_value = get_consumer_offsets
+    mock_client.get_highwater_offsets.return_value = get_highwater_offsets
+    mock_client.get_partitions_for_topic.return_value = get_partitions_for_topics
     mock_generic_client.return_value = mock_client
+    caplog.set_level(logging.WARNING)
 
     # When
     kafka_consumer_check = check(kafka_instance)
@@ -128,7 +122,7 @@ def test_when_consumer_lag_less_than_zero_then_emit_event(
 
     # Then
     aggregator.assert_metric(
-        "kafka.broker_offset", count=1, tags=['optional:tag1', 'partition:partition1', 'topic:topic1']
+        "kafka.broker_offset", count=expected_broker_offset_count, tags=['optional:tag1', 'partition:partition1', 'topic:topic1']
     )
     aggregator.assert_metric(
         "kafka.consumer_offset",
@@ -145,9 +139,59 @@ def test_when_consumer_lag_less_than_zero_then_emit_event(
         "topic: topic1, partition: partition1 has negative consumer lag. "
         "This should never happen and will result in the consumer skipping new messages "
         "until the lag turns positive.",
-        count=1,
+        count=expected_event_count,
         tags=['consumer_group:consumer_group1', 'optional:tag1', 'partition:partition1', 'topic:topic1'],
     )
+
+    expected_warning = (
+        "Consumer group: consumer_group1 has offsets for topic: topic1, "
+        "partition: partition1, but that topic has no partitions "
+        "in the cluster, so skipping reporting these offsets"
+    )
+
+    assert expected_warning in caplog.text
+
+# @mock.patch("datadog_checks.kafka_consumer.kafka_consumer.KafkaClient")
+# def test_when_consumer_lag_less_than_zero_then_emit_event(
+#     mock_generic_client, check, kafka_instance, dd_run_check, aggregator
+# ):
+#     # Given
+#     # consumer_offset = {(consumer_group, topic, partition): offset}
+#     consumer_offset = {("consumer_group1", "topic1", "partition1"): 2}
+#     # highwater_offset = {(topic, partition): offset}
+#     highwater_offset = {("topic1", "partition1"): 1}
+#     mock_client = mock.MagicMock()
+#     mock_client.get_consumer_offsets.return_value = consumer_offset
+#     mock_client.get_highwater_offsets.return_value = highwater_offset
+#     mock_client.get_partitions_for_topic.return_value = ['partition1']
+#     mock_generic_client.return_value = mock_client
+
+#     # When
+#     kafka_consumer_check = check(kafka_instance)
+#     dd_run_check(kafka_consumer_check)
+
+#     # Then
+#     aggregator.assert_metric(
+#         "kafka.broker_offset", count=1, tags=['optional:tag1', 'partition:partition1', 'topic:topic1']
+#     )
+#     aggregator.assert_metric(
+#         "kafka.consumer_offset",
+#         count=1,
+#         tags=['consumer_group:consumer_group1', 'optional:tag1', 'partition:partition1', 'topic:topic1'],
+#     )
+#     aggregator.assert_metric(
+#         "kafka.consumer_lag",
+#         count=1,
+#         tags=['consumer_group:consumer_group1', 'optional:tag1', 'partition:partition1', 'topic:topic1'],
+#     )
+#     aggregator.assert_event(
+#         "Consumer group: consumer_group1, "
+#         "topic: topic1, partition: partition1 has negative consumer lag. "
+#         "This should never happen and will result in the consumer skipping new messages "
+#         "until the lag turns positive.",
+#         count=1,
+#         tags=['consumer_group:consumer_group1', 'optional:tag1', 'partition:partition1', 'topic:topic1'],
+#     )
 
 
 @mock.patch("datadog_checks.kafka_consumer.kafka_consumer.KafkaClient")

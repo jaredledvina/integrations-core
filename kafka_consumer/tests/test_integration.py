@@ -86,6 +86,7 @@ def test_monitor_broker_highwatermarks(
                 count=1,
             )
 
+    aggregator.assert_all_metrics_covered()
     aggregator.assert_metrics_using_metadata(get_metadata_metrics())
 
 
@@ -170,6 +171,24 @@ def test_config(
 
     for m in metrics:
         aggregator.assert_metric(m, count=metric_count)
+
+    assert exception_msg in caplog.text
+    aggregator.assert_metrics_using_metadata(get_metadata_metrics())
+
+
+def test_invalid_connect_str(dd_run_check, check, aggregator, caplog, kafka_instance):
+    caplog.set_level(logging.DEBUG)
+    kafka_instance['kafka_connect_str'] = 'invalid'
+    del kafka_instance['consumer_groups']
+    dd_run_check(check(kafka_instance))
+
+    for m in metrics:
+        aggregator.assert_metric(m, count=0)
+
+    exception_msg = (
+        'ConfigurationError: Cannot fetch consumer offsets because no consumer_groups are specified and '
+        'monitor_unlisted_consumer_groups is False'
+    )
 
     assert exception_msg in caplog.text
     aggregator.assert_metrics_using_metadata(get_metadata_metrics())
