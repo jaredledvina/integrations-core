@@ -18,6 +18,8 @@ from datadog_checks.gitlab import GitlabCheck
 from .common import (
     ALLOWED_METRICS,
     CUSTOM_TAGS,
+    GITLAB_GITALY_PROMETHEUS_ENDPOINT,
+    GITLAB_LOCAL_GITALY_PROMETHEUS_PORT,
     GITLAB_LOCAL_PORT,
     GITLAB_LOCAL_PROMETHEUS_PORT,
     GITLAB_PROMETHEUS_ENDPOINT,
@@ -52,14 +54,16 @@ def dd_environment():
         'GITLAB_TEST_PASSWORD': GITLAB_TEST_PASSWORD,
         'GITLAB_LOCAL_PORT': str(GITLAB_LOCAL_PORT),
         'GITLAB_LOCAL_PROMETHEUS_PORT': str(GITLAB_LOCAL_PROMETHEUS_PORT),
+        'GITLAB_LOCAL_GITALY_PROMETHEUS_PORT': str(GITLAB_LOCAL_GITALY_PROMETHEUS_PORT),
     }
 
     with docker_run(
         compose_file=os.path.join(HERE, 'compose', 'docker-compose.yml'),
         env_vars=env,
         conditions=[
-            CheckEndpoints(GITLAB_URL, attempts=100, wait=6),
-            CheckEndpoints(GITLAB_PROMETHEUS_ENDPOINT, attempts=100, wait=6),
+            CheckEndpoints(GITLAB_URL, attempts=100, wait=10),
+            CheckEndpoints(GITLAB_PROMETHEUS_ENDPOINT, attempts=100, wait=10),
+            CheckEndpoints(GITLAB_GITALY_PROMETHEUS_ENDPOINT, attempts=100, wait=10),
         ],
     ):
         # run pre-test commands
@@ -99,6 +103,16 @@ def mocked_requests_get(*args, **kwargs):
         return response
     elif url == "http://{}:{}/-/metrics".format(HOST, GITLAB_LOCAL_PORT):
         f_name = os.path.join(os.path.dirname(__file__), 'fixtures', 'metrics.txt')
+
+        with open(f_name, 'r') as f:
+            text_data = f.read()
+            return mock.MagicMock(
+                status_code=200,
+                iter_lines=lambda **kwargs: text_data.split("\n"),
+                headers={'Content-Type': "text/plain"},
+            )
+    elif url == "http://{}:{}/metrics".format(HOST, GITLAB_LOCAL_GITALY_PROMETHEUS_PORT):
+        f_name = os.path.join(os.path.dirname(__file__), 'fixtures', 'gitaly.txt')
 
         with open(f_name, 'r') as f:
             text_data = f.read()

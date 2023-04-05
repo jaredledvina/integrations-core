@@ -54,6 +54,11 @@ instances:
     #
   - openmetrics_endpoint: http://<GITLAB_URL>/-/metrics
 
+    ## @param gitaly_server_endpoint - string - optional
+    ## Endpoint exposing the Gitaly Server's Prometheus metrics (only available when `openmetrics_endpoint` is used).
+    #
+    # gitaly_server_endpoint: http://<GITALY-URL>:9236/metrics
+
     ## @param prometheus_url - string - optional - default: http://<GITLAB_URL>/-/metrics
     ## To enable GitLab metrics using the legacy OpenMetricsBaseCheckV1 you must specify the `prometheus_url` option.
     ##
