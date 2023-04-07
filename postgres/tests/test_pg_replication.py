@@ -15,6 +15,7 @@ from .common import (
     check_db_count,
     check_replication_delay,
     check_slru_metrics,
+    check_tx_metrics,
     check_wal_receiver_metrics,
 )
 from .utils import requires_over_10
@@ -59,6 +60,7 @@ def test_common_replica_metrics(aggregator, integration_check, metrics_cache_rep
     check_replication_delay(aggregator, metrics_cache_replica, expected_tags=expected_tags)
     check_wal_receiver_metrics(aggregator, expected_tags=expected_tags + ['status:streaming'])
     check_conflict_metrics(aggregator, expected_tags=expected_tags)
+    check_tx_metrics(aggregator, expected_tags=expected_tags)
 
     aggregator.assert_all_metrics_covered()
 

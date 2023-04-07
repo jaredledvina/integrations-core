@@ -31,8 +31,8 @@ from .common import (
     check_replication_slots,
     check_slru_metrics,
     check_stat_replication,
-    check_wal_receiver_metrics,
     check_tx_metrics,
+    check_wal_receiver_metrics,
     requires_static_version,
 )
 from .utils import requires_over_10, requires_over_13, requires_over_14
