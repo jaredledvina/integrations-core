@@ -36,7 +36,6 @@ from .common import (
     requires_static_version,
 )
 from .utils import requires_over_10, requires_over_13, requires_over_14
-from .utils import requires_over_10
 
 CONNECTION_METRICS = ['postgresql.max_connections', 'postgresql.percent_usage_connections']
 

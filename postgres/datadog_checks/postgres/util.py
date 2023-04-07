@@ -332,7 +332,7 @@ SELECT name, {metrics_columns}
 
 TX_METRICS = {
     'name': 'pg_snapshot_xmin',
-    'query': "pg_snapshot_xmin(pg_current_snapshot())",
+    'query': "select pg_snapshot_xmin(pg_current_snapshot())",
     'columns': [
         {'name': 'postgresql.transactions.xid', 'type': 'gauge'},
     ],
@@ -340,7 +340,7 @@ TX_METRICS = {
 
 TX_METRICS_LT_13 = {
     'name': 'pg_snapshot_xmin',
-    'query': "txid_snapshot_xmin(txid_current_snapshot())",
+    'query': "select txid_snapshot_xmin(txid_current_snapshot())",
     'columns': [
         {'name': 'postgresql.transactions.xid', 'type': 'gauge'},
     ],
