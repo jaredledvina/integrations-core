@@ -124,6 +124,11 @@ class PostgreSql(AgentCheck):
             queries.append(QUERY_PG_STAT_WAL_RECEIVER)
             queries.append(QUERY_PG_REPLICATION_SLOTS)
 
+        if self.version >= V13:
+            queries.append(TX_METRICS)
+        if self.version < V13:
+            queries.append(TX_METRICS_LT_13)
+
         if not queries:
             self.log.debug("no dynamic queries defined")
             return None
@@ -386,9 +391,6 @@ class PostgreSql(AgentCheck):
             metric_scope.append(self.metrics_cache.get_count_metrics())
         if self.version >= V13:
             metric_scope.append(SLRU_METRICS)
-            metric_scope.append(TX_METRICS)
-        if self.version < V13:
-            metric_scope.append(TX_METRICS_LT_13)
 
         # Do we need relation-specific metrics?
         if self._config.relations:

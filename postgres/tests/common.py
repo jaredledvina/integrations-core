@@ -95,6 +95,13 @@ COMMON_DBS = ['dogs', 'postgres', 'dogs_nofunc', 'dogs_noschema', DB_NAME]
 requires_static_version = pytest.mark.skipif(USING_LATEST, reason='Version `latest` is ever-changing, skipping')
 
 
+def _iterate_metric_name(columns):
+    for column in columns:
+        if column['type'] == 'tag':
+            continue
+        yield column['name']
+
+
 def assert_metric_at_least(aggregator, metric_name, lower_bound=None, higher_bound=None, count=None, tags=None):
     found_values = 0
     expected_tags = normalize_tags(tags, sort=True)
@@ -179,28 +186,24 @@ def check_wal_receiver_metrics(aggregator, expected_tags, count=1, connected=1):
             'postgresql.wal_receiver.connected', count=count, value=1, tags=expected_tags + ['status:disconnected']
         )
         return
-    for column in QUERY_PG_STAT_WAL_RECEIVER['columns']:
-        if column['type'] == 'tag':
-            continue
-        aggregator.assert_metric(column['name'], count=count, tags=expected_tags)
+    for metric_name in _iterate_metric_name(QUERY_PG_STAT_WAL_RECEIVER['columns']):
+        aggregator.assert_metric(metric_name, count=count, tags=expected_tags)
 
 
 def check_replication_slots(aggregator, expected_tags, count=1):
     if float(POSTGRES_VERSION) < 10.0:
         return
-    for column in QUERY_PG_REPLICATION_SLOTS['columns']:
-        if column['type'] == 'tag':
-            continue
-        if 'slot_type:physical' in expected_tags and column['name'] in [
+    for metric_name in _iterate_metric_name(QUERY_PG_REPLICATION_SLOTS['columns']):
+        if 'slot_type:physical' in expected_tags and metric_name in [
             'postgresql.replication_slot.confirmed_flush_delay_bytes',
         ]:
             continue
-        if 'slot_type:logical' in expected_tags and column['name'] in [
+        if 'slot_type:logical' in expected_tags and metric_name in [
             'postgresql.replication_slot.restart_delay_bytes',
             'postgresql.replication_slot.xmin_age',
         ]:
             continue
-        aggregator.assert_metric(column['name'], count=count, tags=expected_tags)
+        aggregator.assert_metric(metric_name, count=count, tags=expected_tags)
 
 
 def check_replication_delay(aggregator, metrics_cache, expected_tags, count=1):
@@ -238,5 +241,5 @@ def check_slru_metrics(aggregator, expected_tags, count=1):
 
 
 def check_tx_metrics(aggregator, expected_tags, count=1):
-    for (metric_name, _) in TX_METRICS['metrics'].values():
+    for metric_name in _iterate_metric_name(TX_METRICS['columns']):
         aggregator.assert_metric(metric_name, count=count, tags=expected_tags)

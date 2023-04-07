@@ -331,21 +331,19 @@ SELECT name, {metrics_columns}
 }
 
 TX_METRICS = {
-    'descriptors': [],
-    'metrics': {
-        'pg_snapshot_xmin(pg_current_snapshot())': ('postgresql.transactions.xid', AgentCheck.gauge),
-    },
-    'relation': False,
-    'query': 'SELECT {metrics_columns}',
+    'name': 'pg_snapshot_xmin',
+    'query': "pg_snapshot_xmin(pg_current_snapshot())",
+    'columns': [
+        {'name': 'postgresql.transactions.xid', 'type': 'gauge'},
+    ],
 }
 
 TX_METRICS_LT_13 = {
-    'descriptors': [],
-    'metrics': {
-        'txid_snapshot_xmin(txid_current_snapshot())': ('postgresql.transactions.xid', AgentCheck.gauge),
-    },
-    'relation': False,
-    'query': 'SELECT {metrics_columns}',
+    'name': 'pg_snapshot_xmin',
+    'query': "txid_snapshot_xmin(txid_current_snapshot())",
+    'columns': [
+        {'name': 'postgresql.transactions.xid', 'type': 'gauge'},
+    ],
 }
 
 FUNCTION_METRICS = {
